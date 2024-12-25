@@ -1,4 +1,4 @@
-### Nodepay Automate
+# Nodepay Automate
 <hr>
 
 Automate Nodepay Network farming using proxies. **Important:** Read the instructions below.
