@@ -1,157 +1,89 @@
-# Nodepay Automate with Proxies 
-Automate farming Nodepay Network using proxies. Important! Please read the Information below:
-- Old version is not working anymore, Please use ``runv2.py`` instead!
-- Now this script support Windows without [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
-- This script support multiple accounts. Support socks and http proxies. Using 3 proxies for each accounts.
-<!--For Windows users please use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)-->
-<!--- Latest curl_cffi modules (for impersonate chrome131 version) ``curl_cffi==0.8.0b7`` isn't updated from Windows Python Library server. I already tried impersonate chrome110 version and others but still getting error, stable impersonate is chrome131 version.
-~Please use the bypass version. I found Nodepay's real IP host to make farming easier without being blocked by Cloudflare protection.~
-- This bot only support for Linux and [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) Windows for now, for Termux use [tutorial](https://github.com/im-hanzou/nodepay-automate?tab=readme-ov-file#termux) below.-->
-## Tools and components required
-1. Nodepay Account | Register: [https://app.nodepay.ai/register](https://app.nodepay.ai/register?ref=ZUCBuJaIoBXLE6J)
-2. VPS (OPTIONAL) and Python3
+
+---
+
+# Nodepay Automate with Proxies
+
+Automate Nodepay Network farming using proxies. **Important:** Read the instructions below.
+
+- Use `run.py` 
+- Supports Windows without [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
+- Supports multiple accounts and uses 3 proxies per account (both SOCKS and HTTP).
+
+## Requirements
+1. Nodepay Account - [Register here](https://app.nodepay.ai/register?ref=FywftYq1yFb66N7)
+2. VPS (optional) and Python 3
 3. Proxies
-## Buy Proxies
-- Free Proxies Static Residental: 
-1. [WebShare](https://www.webshare.io/?referral_code=p7k7whpdu2jg)
-2. [ProxyScrape](https://proxyscrape.com/?ref=odk1mmj)
-3. [MonoSans](https://github.com/monosans/proxy-list)
-- Paid Premium Static Residental:
-1. [922proxy](https://www.922proxy.com/register?inviter_code=d03d4fed)
-2. [Proxy-Cheap](https://app.proxy-cheap.com/r/JysUiH)
-3. [Infatica](https://dashboard.infatica.io/aff.php?aff=544)
-# Setup Tutorial
-- Open [Nodepay](https://app.nodepay.ai/register?ref=ZUCBuJaIoBXLE6J) and login to dashboard
-- Press F12 or CTRL + SHIFT + I
-- Select CONSOLE and type ```allow pasting``` and press enter
-<!-- - Important! Make sure you installed Nodepay Extension in your Browser and must be Connected after getting token!, Download Extension: [Nodepay Extension](https://chromewebstore.google.com/detail/nodepay-extension/lgmpfmgeabnnlemejacfljbmonaomfmm) -->
-![0001](https://github.com/im-hanzou/getgrass_bot/blob/main/pasting.JPG)
-- Then type ``localStorage.getItem('np_token')`` and press enter
-![0002](https://github.com/im-hanzou/getgrass_bot/blob/main/nodepaytoken.png)
-- The text that appears is your nodepay token and copy the text
-# Components installation
-### WINDOWS
-Now this script support Windows without [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
-- Install Python For Windows: [Python](https://www.python.org/ftp/python/3.13.0/python-3.13.0-amd64.exe)
-- Download this script Manually: [Nodepay Automate](https://github.com/im-hanzou/nodepay-automate/archive/refs/heads/main.zip)
-- If you want to use Git, Please download Git first: [Git Windows](https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe), Then run in cmd:
-```bash
-git clone https://github.com/im-hanzou/nodepay-automate
-```
-- Make sure you are in this script directory: ``cd nodepay-automate``
-- Installing requirements:
-```bash
-python -m pip install -r requirements.txt
-```
-<!-- - For Windows, now you need to install [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to run Linux inside Windows.
-- How to install WSL: [Youtube Tutorial](https://www.youtube.com/watch?v=HrAsmXy1-78&ab_channel=LogicLambda).
-- Next, follow the Linux component installation steps below within the [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) terminal.-->
-### LINUX
-- For Linux Ubuntu/Debian, install Python3 and Git:
-```bash
-apt update; apt upgrade -y; apt install git python3 python3-pip -y
-```
-- For Linux CentOS, install Python3 and Git:
-```bash
-yum update; yum upgrade -y; yum install git python3 python3-pip -y
-```
-- Download this script using Git:
-```bash
-git clone https://github.com/im-hanzou/nodepay-automate
-```
-- Make sure you are in this script directory: ``cd nodepay-automate``
-- Installing requirements: 
-```bash
-python3 -m pip install -r requirements.txt
-```
-### TERMUX
-- For Termux Android [Download Here](https://f-droid.org/repo/com.termux_1020.apk) [F-Droid Version] and Allow Permission Storage On Setting Termux
-- Install Python3 and Git:
-```bash
-pkg update; pkg upgrade -y; pkg install git python python-pip -y
-```
-- Download this script using Git:
-```bash
-git clone https://github.com/im-hanzou/nodepay-automate
-```
-- Make sure you are in this script directory: ``cd nodepay-automate``
-- Copy ``libcurl-impersonate-chrome.so.4`` to ``/data/data/com.termux/files/usr/lib``
-```bash
-cp libcurl-impersonate-chrome.so.4 /data/data/com.termux/files/usr/lib
-```
-- Installing requirements: 
-```bash
-python -m pip install -r requirements.txt
-```
-# Run the Script
-- Replace the proxies example in ```proxies.txt``` to your own proxies, please use only 3 proxies with proxies. If you run multiple accounts make sure you have 3 proxies for each accounts.
-- For multi accounts, insert your tokens perlines in file ``tokens.txt``
-<!-- ## Run command Windows
-- Run for original server - version 2:
-```bash
-python runv2.py
-```
->Press Enter, Select 1 then insert your nodepay token
-- Run for original server - version 2 - multi accounts:
->Make sure you have tokens in ``tokens.txt`` before
-```bash
-python runv2.py
-```
->Press Enter then Select 2 -->
-## Run command
-### Windows and Termux
-- Run for original server - version 2:
-```bash
-python runv2.py
-```
->Press Enter, Select 1 then insert your nodepay token
-- Run for original server - version 2 - multi accounts:
->Make sure you have tokens in ``tokens.txt`` before
-```bash
-python runv2.py
-```
->Press Enter then Select 2
-### Linux Distros
-- Run for original server - version 2:
-```bash
-python3 runv2.py
-```
->Press Enter, Select 1 then insert your nodepay token
-- Run for original server - version 2 - multi accounts:
->Make sure you have tokens in ``tokens.txt`` before
-```bash
-python3 runv2.py
-```
->Press Enter then Select 2
-<!-- - ~Run for original server~:
-```bash
-python run.py
-```
->~Press Enter then insert your nodepay token~ Not working anymore, please use ``runv2.py``
-- ~Run for bypass server~:
->~Use this script if you getting errors like ```Error during API call: 403 Client Error: Forbidden for url```~. Not working anymore, please use ``runv2.py``
-```bash
-python run-bypass.py
-```
->~Press Enter then insert your nodepay token~ Not working anymore, please use ``runv2.py``
-- ~Run for multi bypassed server~:
-```bash
-python run-multi-bypass.py
-```
->Not working anymore, please use ``runv2.py`` -->
-# Operating status
-If the following log appears, it means it is running successfully.
-```bash
-[2024-12-02 14:54:54] [INFO] Account: user@email.com | Browser ID: xxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx | IP: 127.0.0.1 | IP Score: 99
-[2024-12-02 14:54:58] [INFO] Account: user@email.com | Browser ID: xxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx | IP: 127.0.0.1 | IP Score: 86
-[2024-12-02 14:54:59] [INFO] Account: user@email.com | Browser ID: xxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx | IP: 127.0.0.1 | IP Score: 92
-[2024-12-02 14:55:02] [INFO] Account: user@email.com | Browser ID: xxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx | IP: 127.0.0.1 | IP Score: 81
-[2024-12-02 14:55:11] [INFO] Account: user@email.com | Browser ID: xxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxx | IP: 127.0.0.1 | IP Score: 82
-```
-# Notes
-- Run this script, and it will update your referral code to my invite code if you don't have one.
-- One account only can connect with 3 Proxies. If you run multiple accounts make sure you have 3 proxies for each accounts.
-- If you run the script and still got error, please use paid proxies cause every free proxies not all supported.
-- You can just run this script at your own risk, I'm not responsible for any loss or damage caused by this script. This script is for educational purposes only.
-<!-- - Feel free to enjoy and recode or create new bots using the Nodepay API with direct IP that I found. -->
+
+## Proxy Sources:
+- **Free Residential Proxies:**
+  - [WebShare](https://www.webshare.io/?referral_code=p7k7whpdu2jg)
+  - [ProxyScrape](https://proxyscrape.com/?ref=odk1mmj)
+  - [MonoSans](https://github.com/monosans/proxy-list)
+- **Paid Premium Proxies:**
+  - [922proxy](https://www.922proxy.com/register?inviter_code=d03d4fed)
+  - [Proxy-Cheap](https://app.proxy-cheap.com/r/JysUiH)
+  - [Infatica](https://dashboard.infatica.io/aff.php?aff=544)
+
+## Setup Guide
+
+1. **Get Nodepay Token:**
+   - Log in to [Nodepay](https://app.nodepay.ai/register?ref=FywftYq1yFb66N7), open Developer Tools (F12 or `Ctrl+Shift+I`).
+   - Go to the **Console**, type `allow pasting` and press Enter.
+   - Type `localStorage.getItem('np_token')`, press Enter, and copy the token.
+
+2. **Install Dependencies:**
+
+   - **Windows:**
+     - Install Python: [Download](https://www.python.org/downloads/)
+     - Download the script: [Nodepay Automate](https://github.com/fachryotosaka/nodepay-automate/archive/refs/heads/main.zip)
+     - Install requirements: `python -m pip install -r requirements.txt`
+
+   - **Linux (Ubuntu/Debian/CentOS):**
+     - Update and install dependencies:
+       ```bash
+       sudo apt update && sudo apt install git python3 python3-pip -y   # Ubuntu/Debian
+       sudo yum install git python3 python3-pip -y  # CentOS
+       ```
+     - Download script: `git clone https://github.com/fachryotosaka/nodepay-automate`
+     - Install requirements: `python3 -m pip install -r requirements.txt`
+
+   - **Termux (Android):**
+     - Install Termux: [Download Here](https://f-droid.org/repo/com.termux_1020.apk)
+     - Install dependencies:
+       ```bash
+       pkg update && pkg install git python python-pip -y
+       ```
+     - Download script: `git clone https://github.com/im-hanzou/nodepay-automate`
+     - Install requirements: `python -m pip install -r requirements.txt`
+
+## Running the Script
+
+1. **Configure Proxies:**
+   - Replace example proxies in `local_proxies.txt` with your own (3 proxies per account).
+   - For multiple accounts, add tokens to `tokens.txt`.
+
+2. **Start Farming:**
+
+   - **Windows/Termux:**
+     ```bash
+     python run.py
+     ```
+     Select 1, then insert your Nodepay token.
+
+   - **Multi-Account (ensure tokens are in `tokens.txt`):**
+     ```bash
+     python run.py
+     ```
+     Select 2.
+
+   - **Linux:**
+     ```bash
+     python3 run.py
+     ```
+     Select 1 and insert your Nodepay token
+
+## Notes
+- Each account requires 3 proxies. Ensure you have enough for multiple accounts.
+- Free proxies may not always work; consider using paid proxies for better reliability.
+- Run at your own risk; this script is for educational purposes only.
 

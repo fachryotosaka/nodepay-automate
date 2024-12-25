@@ -1,3 +1,0 @@
-JUST EXAMPLE, DELETE THIS ALL
-http://127.0.0.1:8080
-http://user:pass@127.0.0.1:8080

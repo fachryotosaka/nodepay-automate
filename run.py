@@ -1,20 +1,32 @@
-# Not working anymore, please use runv2.py
 import asyncio
-import aiohttp
 import time
 import uuid
-import cloudscraper
-from loguru import logger
+from datetime import datetime
+from curl_cffi import requests
+import colorama
+from colorama import Fore, Style
+
+colorama.init(autoreset=True)
+
+def log(level, message, color=Fore.WHITE):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    formatted_message = f"{Fore.CYAN}[{timestamp}]{Style.RESET_ALL} {color}[{level}]{Style.RESET_ALL} {message}"
+    print(formatted_message)
 
 def show_warning():
-    confirm = input("Nodepay Autofarmer by IM-Hanzou: github.com/im-hanzou\n\nBy using this tool means you understand the risks. do it at your own risk! \nPress Enter to continue or Ctrl+C to cancel... ")
-
-    if confirm.strip() == "":
-        print("Continuing...")
-    else:
-        print("Exiting...")
+    try:
+        confirm = input(Fore.LIGHTRED_EX + "By using this tool means you understand the risks. Do it at your own risk! \n" + 
+                       Fore.CYAN + "Press Enter to continue or Ctrl+C to cancel... ")
+        if confirm.strip() == "":
+            print(Fore.LIGHTGREEN_EX + "Continuing...")
+        else:
+            print(Fore.LIGHTRED_EX + "Exiting...")
+            exit()
+    except KeyboardInterrupt:
+        print(Fore.LIGHTRED_EX + "\nExiting...")
         exit()
-# Constants
+
+
 PING_INTERVAL = 60
 RETRIES = 60
 
@@ -29,10 +41,7 @@ CONNECTION_STATES = {
     "NONE_CONNECTION": 3
 }
 
-status_connect = CONNECTION_STATES["NONE_CONNECTION"]
-browser_id = None
-account_info = {}
-last_ping_time = {}  
+proxy_browser_ids = {}
 
 def uuidv4():
     return str(uuid.uuid4())
@@ -41,42 +50,69 @@ def valid_resp(resp):
     if not resp or "code" not in resp or resp["code"] < 0:
         raise ValueError("Invalid response")
     return resp
+
+def parse_proxy(proxy_str):
+    if '://' not in proxy_str:
+        proxy_str = f'http://{proxy_str}'
+    
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(proxy_str)
+        
+        proxy_dict = {
+            'http': proxy_str,
+            'https': proxy_str
+        }
+        
+        if parsed.scheme in ['socks4', 'socks5']:
+            proxy_dict['http'] = proxy_str
+            proxy_dict['https'] = proxy_str
+        
+        return proxy_dict
+    except Exception as e:
+        log("ERROR", f"Invalid proxy format: {proxy_str}. Error: {e}", Fore.LIGHTRED_EX)
+        return None
     
 async def render_profile_info(proxy, token):
-    global browser_id, account_info
+    global proxy_browser_ids
 
     try:
+        if proxy not in proxy_browser_ids:
+            proxy_browser_ids[proxy] = uuidv4()
+
         np_session_info = load_session_info(proxy)
 
         if not np_session_info:
-            # Generate new browser_id
-            browser_id = uuidv4()
             response = await call_api(DOMAIN_API["SESSION"], {}, proxy, token)
             valid_resp(response)
             account_info = response["data"]
             if account_info.get("uid"):
                 save_session_info(proxy, account_info)
-                await start_ping(proxy, token)
+                await start_ping(proxy, token, account_info)
             else:
                 handle_logout(proxy)
         else:
             account_info = np_session_info
-            await start_ping(proxy, token)
+            await start_ping(proxy, token, account_info)
     except Exception as e:
-        logger.error(f"Error in render_profile_info for proxy {proxy}: {e}")
+        log("ERROR", f"Error in render_profile_info for proxy {proxy}: {e}", Fore.LIGHTRED_EX)
         error_message = str(e)
         if any(phrase in error_message for phrase in [
             "sent 1011 (internal error) keepalive ping timeout; no close frame received",
             "500 Internal Server Error"
         ]):
-            logger.info(f"Removing error proxy from the list: {proxy}")
+            log("WARNING", f"Removing error proxy from the list: {proxy}", Fore.LIGHTYELLOW_EX)
             remove_proxy_from_list(proxy)
             return None
         else:
-            logger.error(f"Connection error: {e}")
+            log("ERROR", f"Connection error: {e}", Fore.LIGHTRED_EX)
             return proxy
 
 async def call_api(url, data, proxy, token):
+    parsed_proxies = parse_proxy(proxy)
+    if not parsed_proxies:
+        raise ValueError(f"Invalid proxy: {proxy}")
+
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -87,123 +123,164 @@ async def call_api(url, data, proxy, token):
     }
 
     try:
-        scraper = cloudscraper.create_scraper()
+        response = requests.post(
+            url, 
+            json=data, 
+            headers=headers, 
+            proxies=parsed_proxies,
+            timeout=30,
+            impersonate="safari15_5"
+        )
 
-        response = scraper.post(url, json=data, headers=headers, proxies={
-                                "http": proxy, "https": proxy}, timeout=30)
-
-        response.raise_for_status()
         return valid_resp(response.json())
     except Exception as e:
-        logger.error(f"Error during API call: {e}")
+        log("ERROR", f"Error during API call: {e}", Fore.LIGHTRED_EX)
         raise ValueError(f"Failed API call to {url}")
 
-async def start_ping(proxy, token):
+async def start_ping(proxy, token, account_info):
     try:
         while True:
-            await ping(proxy, token)
+            await ping(proxy, token, account_info)
             await asyncio.sleep(PING_INTERVAL)
     except asyncio.CancelledError:
-        logger.info(f"Ping task for proxy {proxy} was cancelled")
+        log("INFO", f"Ping task for proxy {proxy} was cancelled", Fore.LIGHTBLUE_EX)
     except Exception as e:
-        logger.error(f"Error in start_ping for proxy {proxy}: {e}")
+        log("ERROR", f"Error in start_ping for proxy {proxy}: {e}", Fore.LIGHTRED_EX)
         
-async def ping(proxy, token):
-    global last_ping_time, RETRIES, status_connect
+async def get_real_ip(proxy):
+    parsed_proxies = parse_proxy(proxy)
+    if not parsed_proxies:
+        return "N/A"
+    
+    try:
+        response = requests.get(
+            "https://api64.ipify.org/", 
+            proxies=parsed_proxies,
+            timeout=10
+        )
+        return response.text.strip()
+    except Exception as e:
+        log("ERROR", f"Failed to get real IP via proxy {proxy}: {e}", Fore.LIGHTRED_EX)
+        return "N/A"
+
+async def ping(proxy, token, account_info):
+    global proxy_browser_ids, RETRIES, CONNECTION_STATES
 
     current_time = time.time()
-
-    if proxy in last_ping_time and (current_time - last_ping_time[proxy]) < PING_INTERVAL:
-        logger.info(f"Skipping ping for proxy { proxy}, not enough time elapsed")
-        return
-
-    last_ping_time[proxy] = current_time
 
     try:
         data = {
             "id": account_info.get("uid"),
-            "browser_id": browser_id,  
+            "browser_id": proxy_browser_ids[proxy],
             "timestamp": int(time.time()),
             "version":"2.2.7"
         }
 
         response = await call_api(DOMAIN_API["PING"], data, proxy, token)
         if response["code"] == 0:
-            logger.info(f"Ping successful via proxy {proxy}: {response}")
+            ip_score = response.get('data', {}).get('ip_score', 'N/A')
+            real_ip = await get_real_ip(proxy)
+            log("INFO", 
+                f"Account: {Fore.LIGHTMAGENTA_EX}{account_info.get('email', 'N/A')}{Style.RESET_ALL} | " + 
+                f"Browser ID: {Fore.LIGHTGREEN_EX}{proxy_browser_ids[proxy]}{Style.RESET_ALL} | " +
+                f"IP: {Fore.BLUE}{real_ip}{Style.RESET_ALL} | " + 
+                f"IP Score: {Fore.LIGHTRED_EX}{ip_score}{Style.RESET_ALL}", 
+                Fore.LIGHTCYAN_EX)
             RETRIES = 0
-            status_connect = CONNECTION_STATES["CONNECTED"]
         else:
             handle_ping_fail(proxy, response)
     except Exception as e:
-        logger.error(f"Ping failed via proxy {proxy}: {e}")
+        log("ERROR", f"Ping failed via proxy {proxy}: {e}", Fore.LIGHTRED_EX)
         handle_ping_fail(proxy, None)
 
 def handle_ping_fail(proxy, response):
-    global RETRIES, status_connect
+    global RETRIES
 
     RETRIES += 1
     if response and response.get("code") == 403:
         handle_logout(proxy)
-    elif RETRIES < 2:
-        status_connect = CONNECTION_STATES["DISCONNECTED"]
-    else:
-        status_connect = CONNECTION_STATES["DISCONNECTED"]
 
 def handle_logout(proxy):
-    global status_connect, account_info
+    global proxy_browser_ids
 
-    status_connect = CONNECTION_STATES["NONE_CONNECTION"]
-    account_info = {}
+    if proxy in proxy_browser_ids:
+        del proxy_browser_ids[proxy]
     save_status(proxy, None)
-    logger.info(f"Logged out and cleared session info for proxy {proxy}")
+    log("WARNING", f"Logged out and cleared session info for proxy {proxy}", Fore.LIGHTYELLOW_EX)
 
 def load_proxies(proxy_file):
     try:
         with open(proxy_file, 'r') as file:
             proxies = file.read().splitlines()
-        return proxies
+        return [p for p in proxies if p.strip()]
     except Exception as e:
-        logger.error(f"Failed to load proxies: {e}")
+        log("ERROR", f"Failed to load proxies: {e}", Fore.LIGHTRED_EX)
         raise SystemExit("Exiting due to failure in loading proxies")
 
 def save_status(proxy, status):
     pass  
 
 def save_session_info(proxy, data):
-    data_to_save = {
-        "uid": data.get("uid"),
-        "browser_id": browser_id  
-    }
     pass
 
 def load_session_info(proxy):
     return {}  
 
 def is_valid_proxy(proxy):
-    return True  
+    return parse_proxy(proxy) is not None
 
 def remove_proxy_from_list(proxy):
     pass  
 
-async def main():
-    all_proxies = load_proxies('proxies.txt')  
-    # Take token input directly from the user
-    token = input("Nodepay token: ").strip()
-    if not token:
-        print("Token cannot be empty. Exiting the program.")
-        exit()
+async def process_token(token, proxies):
+    tasks = {asyncio.create_task(render_profile_info(
+        proxy, token)): proxy for proxy in proxies}
 
-    while True:
-        active_proxies = [
-            proxy for proxy in all_proxies if is_valid_proxy(proxy)][:100]
-        tasks = {asyncio.create_task(render_profile_info(
-            proxy, token)): proxy for proxy in active_proxies}
-
+    while tasks:
         done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             failed_proxy = tasks[task]
             if task.result() is None:
-                logger.info(f"Removing and replacing failed proxy: {failed_proxy}")
+                log("INFO", f"Removing and replacing failed proxy for token {token[:1000]}...: {failed_proxy}", Fore.LIGHTYELLOW_EX)
+                proxies.remove(failed_proxy)
+            tasks.pop(task)
+
+        for proxy in set(proxies) - set(tasks.values()):
+            new_task = asyncio.create_task(
+                render_profile_info(proxy, token))
+            tasks[new_task] = proxy
+        
+        if not tasks:
+            break
+        
+        await asyncio.sleep(3)
+    
+    await asyncio.sleep(10)
+
+async def main():
+    
+    all_proxies = load_proxies('local_proxies.txt')
+    
+    print(Fore.LIGHTYELLOW_EX + "Alright, we here! Insert your nodepay token that you got from the tutorial.\n")
+    token = input(Fore.LIGHTYELLOW_EX + "Nodepay Token: ").strip()
+    if not token:
+        log("ERROR", "Token cannot be empty. Exiting the program.", Fore.LIGHTRED_EX)
+        exit()
+
+    await single_account_mode(token, all_proxies)
+
+async def single_account_mode(token, all_proxies):
+    active_proxies = [
+        proxy for proxy in all_proxies if is_valid_proxy(proxy)][:1000]
+    tasks = {asyncio.create_task(render_profile_info(
+        proxy, token)): proxy for proxy in active_proxies}
+
+    while tasks:
+        done, pending = await asyncio.wait(tasks.keys(), return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            failed_proxy = tasks[task]
+            if task.result() is None:
+                log("INFO", f"Removing and replacing failed proxy: {failed_proxy}", Fore.LIGHTYELLOW_EX)
                 active_proxies.remove(failed_proxy)
                 if all_proxies:
                     new_proxy = all_proxies.pop(0)
@@ -219,12 +296,11 @@ async def main():
                 render_profile_info(proxy, token))
             tasks[new_task] = proxy
         await asyncio.sleep(3)
-    await asyncio.sleep(10)  
+    await asyncio.sleep(10)
 
 if __name__ == '__main__':
     show_warning()
-    print("\nAlright, we here! Insert your nodepay token that you got from the tutorial.")
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logger.info("Program terminated by user.")
+        print(Fore.LIGHTRED_EX + "Program terminated by user.")
