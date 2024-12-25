@@ -1,7 +1,8 @@
 
 ---
 
-# Nodepay Automate with Proxies
+## Nodepay Automate
+<hr>
 
 Automate Nodepay Network farming using proxies. **Important:** Read the instructions below.
 
@@ -66,7 +67,7 @@ Automate Nodepay Network farming using proxies. **Important:** Read the instruct
 
    - **Windows/Termux:**
      ```bash
-     python run.py
+     python3 run.py
      ```
      Select 1, then insert your Nodepay token.
 
