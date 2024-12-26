@@ -7,3 +7,5 @@ curl_cffi
 colorama
 fake-useragent
 requests
+pyfiglet
+aiofiles
